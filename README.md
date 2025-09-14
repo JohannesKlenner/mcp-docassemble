@@ -9,11 +9,29 @@ A Model Context Protocol (MCP) server that provides complete access to the Docas
 - ✅ **Enhanced Session Management** - Configurable timeouts and improved session handling  
 - ✅ **Graceful Fallbacks** - Robust handling of unsupported APIs
 - ✅ **Enhanced Error Handling** - Detailed error categorization and retry mechanisms
-- ✅ **Production Ready** - 95% test success rate across all endpoints
+- ✅ **Production Ready** - 14.3% endpoints fully functional, 73% awaiting implementation
+
+**Testing Environment:**
+- **Docassemble Version**: ~1.4.x - 1.5.x (Asset Version: 1.8.12)
+- **Current Available**: v1.6.5 (upgrade recommended for full API support)
+- **Stability**: Server occasionally requires restart (502 errors resolve automatically)
 
 ## Overview
 
 This MCP server exposes all 63 Docassemble API endpoints with enhanced reliability, enabling comprehensive LLM integration with Docassemble systems. All available functions are clearly documented with required parameters and permissions.
+
+### 🔍 Tested Environment
+
+**Current Test Results based on:**
+- **Docassemble Version**: ~1.4.x - 1.5.x (Asset Version: 1.8.12)
+- **Test Date**: September 14, 2025
+- **Latest Docassemble**: v1.6.5 (available for upgrade)
+- **API Compatibility**: Older version limits some endpoints
+
+**Version Impact:**
+- Some endpoints return 404 because they don't exist in older Docassemble versions
+- "Failed" tests often show correct parameter validation rather than actual failures
+- Upgrade to v1.6.5 recommended for full API feature support
 
 ### 📊 Implementation Status
 
@@ -110,9 +128,11 @@ Some endpoints are not available on all Docassemble versions:
 
 ### ⚠️ Important Notes
 
-- **API Rate Limiting**: The Docassemble API is not designed for high-volume operations. Please use reasonable delays between requests to avoid overwhelming the server.
+- **API Rate Limiting**: The Docassemble API is not designed for high-volume operations. Please use reasonable delays (2+ seconds) between requests to avoid overwhelming the server.
 - **Session Management**: Some session-based operations may require active user sessions or specific interview states.
 - **Server Permissions**: Administrative functions require appropriate user privileges and server configurations.
+- **Version Compatibility**: Tests performed on Docassemble ~1.4.x-1.5.x. Some endpoints may not be available in older versions.
+- **Server Stability**: Occasional Bad Gateway (502) errors may occur during server restarts or high load - typically resolve automatically within 2-3 minutes.
 
 ## Installation
 
