@@ -1,0 +1,249 @@
+# Docker Compose für MCP Docassemble Server
+# Lokale Entwicklung und Testing
+
+version: '3.8'
+
+services:
+  # ============================================================================
+  # MCP DOCASSEMBLE SERVER - PRODUCTION
+  # ============================================================================
+  mcp-docassemble:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    image: mcp-docassemble:latest
+    container_name: mcp-docassemble-server
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # Docassemble configuration
+      - DOCASSEMBLE_URL=${DOCASSEMBLE_URL:-http://docassemble.server.com}
+      - DOCASSEMBLE_API_KEY=${DOCASSEMBLE_API_KEY:-your-api-key-here}
+      
+      # Server configuration
+      - MCP_HOST=0.0.0.0
+      - MCP_PORT=8080
+      - MCP_WORKERS=4
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LOG_FORMAT=json
+      
+      # Security configuration
+      - SECURITY_HEADERS=true
+      - RATE_LIMITING=true
+      - MAX_REQUESTS_PER_MINUTE=60
+    volumes:
+      # Persistent logs
+      - mcp_logs:/app/logs
+      - mcp_tmp:/app/tmp
+    networks:
+      - mcp_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/tmp
+    labels:
+      - "com.docker.compose.service=mcp-docassemble"
+      - "com.docker.compose.project=mcp-stack"
+
+  # ============================================================================
+  # DEVELOPMENT VERSION - HOT RELOAD
+  # ============================================================================
+  mcp-docassemble-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    image: mcp-docassemble:dev
+    container_name: mcp-docassemble-dev
+    ports:
+      - "8081:8080"
+    environment:
+      - DOCASSEMBLE_URL=${DOCASSEMBLE_URL:-http://192.168.178.29}
+      - DOCASSEMBLE_API_KEY=${DOCASSEMBLE_API_KEY:-X1IgbwNOk0b0LQ6LS46eSYfj8Ycj4ICU}
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+      - LOG_LEVEL=DEBUG
+    volumes:
+      # Hot reload für Entwicklung
+      - ./src:/app/src
+      - ./mcp_docassemble:/app/mcp_docassemble
+      - ./tests:/app/tests
+      - mcp_dev_logs:/app/logs
+    networks:
+      - mcp_network
+    profiles:
+      - dev
+
+  # ============================================================================
+  # REVERSE PROXY - NGINX
+  # ============================================================================
+  nginx:
+    image: nginx:alpine
+    container_name: mcp-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - mcp-docassemble
+    networks:
+      - mcp_network
+    profiles:
+      - proxy
+
+  # ============================================================================
+  # MONITORING - PROMETHEUS
+  # ============================================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: mcp-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - mcp_network
+    profiles:
+      - monitoring
+
+  # ============================================================================
+  # MONITORING - GRAFANA
+  # ============================================================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: mcp-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./docker/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./docker/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    networks:
+      - mcp_network
+    profiles:
+      - monitoring
+
+  # ============================================================================
+  # LOGGING - ELASTICSEARCH
+  # ============================================================================
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: mcp-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    networks:
+      - mcp_network
+    profiles:
+      - logging
+
+  # ============================================================================
+  # LOGGING - KIBANA
+  # ============================================================================
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: mcp-kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    networks:
+      - mcp_network
+    profiles:
+      - logging
+
+  # ============================================================================
+  # CACHING - REDIS
+  # ============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: mcp-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-mcp-cache-secret}
+    networks:
+      - mcp_network
+    profiles:
+      - cache
+
+  # ============================================================================
+  # SECURITY SCANNING - TRIVY
+  # ============================================================================
+  trivy:
+    image: aquasec/trivy:latest
+    container_name: mcp-trivy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - trivy_cache:/root/.cache/trivy
+    command: image mcp-docassemble:latest
+    profiles:
+      - security
+
+# ============================================================================
+# NETWORKS
+# ============================================================================
+networks:
+  mcp_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# ============================================================================
+# VOLUMES
+# ============================================================================
+volumes:
+  mcp_logs:
+    driver: local
+  mcp_tmp:
+    driver: local
+  mcp_dev_logs:
+    driver: local
+  nginx_logs:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+  redis_data:
+    driver: local
+  trivy_cache:
+    driver: local
