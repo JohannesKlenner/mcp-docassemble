@@ -2,6 +2,7 @@
 Docassemble API Client
 
 Vollständige Implementierung aller 61 Docassemble API Endpunkte
+Enhanced with version detection, graceful fallbacks, and improved error handling.
 """
 
 import json
@@ -11,6 +12,8 @@ from urllib.parse import urljoin
 
 import requests
 from pydantic import BaseModel, Field
+
+from .enhancements import DocassembleClientEnhanced
 
 
 logger = logging.getLogger(__name__)
@@ -24,29 +27,86 @@ class DocassembleAPIError(Exception):
         self.response_data = response_data
 
 
-class DocassembleClient:
+class DocassembleClient(DocassembleClientEnhanced):
     """
     Vollständiger Docassemble API Client mit allen 61 verfügbaren Endpunkten.
+    Enhanced with version detection, graceful fallbacks, and improved session management.
     
     Authentifizierung erfolgt über API-Schlüssel im X-API-Key Header oder als Bearer Token.
     Alle Endpunkte sind nach Kategorien organisiert.
     """
     
-    def __init__(self, base_url: str, api_key: str):
+    __version__ = "1.1.0"
+    
+    def __init__(self, base_url: str, api_key: str, timeout: int = 30, 
+                 session_timeout: int = 3600, enable_fallbacks: bool = True):
         """
         Initialisiere Docassemble Client
         
         Args:
             base_url: Base URL des Docassemble Servers (z.B. https://docassemble.example.com)
             api_key: API Schlüssel für Authentifizierung
+            timeout: Request timeout in seconds (default: 30)
+            session_timeout: Interview session timeout in seconds (default: 3600)
+            enable_fallbacks: Enable graceful fallbacks for unsupported APIs (default: True)
         """
         self.base_url = base_url.rstrip('/')
         self.api_key = api_key
+        self.timeout = timeout
+        self.session_timeout = session_timeout
+        self.enable_fallbacks = enable_fallbacks
         self.session = requests.Session()
         self.session.headers.update({
             'X-API-Key': api_key,
             'Content-Type': 'application/json'
         })
+        
+        # Detect Docassemble version and capabilities
+        self.da_version = self._detect_docassemble_version()
+        self._init_feature_compatibility()
+    
+    def _detect_docassemble_version(self) -> Optional[str]:
+        """Detect Docassemble version and capabilities."""
+        try:
+            response = self.session.get(f"{self.base_url}/api/config", timeout=self.timeout)
+            if response.status_code == 200:
+                config = response.json()
+                version = config.get('version', 'unknown')
+                logger.info(f"Detected Docassemble version: {version}")
+                return version
+        except Exception as e:
+            logger.warning(f"Could not detect Docassemble version: {e}")
+        return None
+    
+    def _init_feature_compatibility(self):
+        """Initialize feature compatibility matrix based on version."""
+        self.feature_support = {
+            'convert_file_to_markdown': False,  # Not available in current versions
+            'get_redirect_url': False,          # Not available in current versions  
+            'get_login_url': False,             # Limited availability
+            'pull_package_to_playground': False, # Version dependent
+            'advanced_session_management': True,  # Available but needs proper handling
+        }
+        
+        # Adjust based on detected version
+        if self.da_version and 'dev' in self.da_version.lower():
+            # Development versions might have more features
+            self.feature_support.update({
+                'convert_file_to_markdown': True,
+                'get_redirect_url': True,
+            })
+    
+    def _is_feature_supported(self, feature: str) -> bool:
+        """Check if a feature is supported in current version."""
+        return self.feature_support.get(feature, True)
+    
+    def _graceful_fallback(self, feature_name: str, fallback_result: Any = None):
+        """Provide graceful fallback for unsupported features."""
+        if not self.enable_fallbacks:
+            raise DocassembleAPIError(f"Feature '{feature_name}' not supported in this Docassemble version")
+        
+        logger.warning(f"Feature '{feature_name}' not available, using fallback")
+        return fallback_result or {"status": "unsupported", "feature": feature_name, "message": "Feature not available in this version"}
     
     def _request(self, method: str, endpoint: str, params: Optional[Dict] = None, 
                 data: Optional[Dict] = None, files: Optional[Dict] = None) -> Any:
@@ -1584,3 +1644,16 @@ class DocassembleClient:
             params['refresh'] = refresh
             
         return self._request('GET', '/api/retrieve_stashed_data', params=params)
+
+    # Convenience methods for direct usage (non-MCP)
+    def list_interviews(self):
+        """List all available interviews"""
+        return self.list_advertised_interviews()
+    
+    def list_packages(self):
+        """List all packages"""
+        return self.list_package_management()
+    
+    def get_user_list(self):
+        """Get list of users"""
+        return self.list_users()
