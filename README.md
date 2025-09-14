@@ -15,35 +15,104 @@ A Model Context Protocol (MCP) server that provides complete access to the Docas
 
 This MCP server exposes all 63 Docassemble API endpoints with enhanced reliability, enabling comprehensive LLM integration with Docassemble systems. All available functions are clearly documented with required parameters and permissions.
 
+### 📊 Implementation Status
+
+**✅ Fully Working (10/63 - 15.9%)**
+- `list_users` - List all system users
+- `create_user` - Create new user accounts  
+- `start_interview` - Start new interview sessions
+- `delete_interview_session` - Delete interview sessions
+- `list_interview_sessions` - List all interview sessions
+- `list_user_interview_sessions` - List user's interview sessions
+- `list_advertised_interviews` - List available interviews
+- `list_playground_files` - List playground files
+- `delete_playground_file` - Delete playground files
+- `stash_data` - Store temporary data
+
+**🔧 To Be Implemented (46/63 - 73.0%)**
+- User Management: `get_user_info`, `delete_user_account`, `set_user_info`, `get_user_privileges`, `set_user_privileges`, `reset_user_password`, `change_user_password`
+- Interview Management: `list_specific_user_interview_sessions`, `get_interview_statistics`, `restart_interview`, `rename_interview_session`
+- File Management: `upload_file`, `download_file`, `get_file_info`, `delete_file`, `list_files`, `convert_file_to_pdf`, `create_playground_file`, `get_playground_file`, `list_interview_files`
+- Package Management: `list_package_management`, `install_package`, `update_package`, `restart_server`, `update_packages`
+- Configuration: `get_configuration`, `set_configuration`, `get_cloud_configuration`, `set_cloud_configuration`, `send_email`, `send_sms`, `get_credentials`
+- Utilities: `get_api_version`, `get_server_version`, `get_health_status`, `get_system_info`, `execute_python_code`, `search_database`, `export_interview_data`, `import_interview_data`, `backup_database`, `restore_database`, `validate_yaml_syntax`, `format_yaml_content`, `get_interview_metadata`, `set_interview_metadata`
+
+**🚫 Server Doesn't Support (3/63 - 4.8%)**
+- `run_interview_action` - API endpoint not available on this Docassemble version
+- `convert_file_to_markdown` - API endpoint not available on this Docassemble version  
+- `get_redirect_url` - API endpoint not available on this Docassemble version
+
+**🔄 Parameter/Session Issues (4/63 - 6.3%)**
+- `get_interview_variables` - Session handling needs improvement
+- `set_interview_variables` - Session handling needs improvement
+- `uninstall_package` - Parameter validation issues
+- `retrieve_stashed_data` - Stash key validation issues
+
 ## Features
 
-### User Management
-- Create, update, and manage users
-- Handle user roles and permissions
-- API key management
+### ✅ Core Working Features
 
-### Interview Management
+#### User Management
+- List system users and create new accounts
+- User account management (partial - creation works)
+
+#### Interview Management  
 - Start and manage interview sessions
-- Set and read interview variables
-- Execute interview actions
-- Session management and navigation
+- List available interviews and sessions
+- Session lifecycle management
 
-### Playground Functions
-- Upload and download files to/from playground
-- Create and manage projects
-- Install and manage packages
+#### File Management
+- Playground file operations (list, delete)
+- Temporary data storage (stash/retrieve)
 
-### System Administration
-- Manage server configuration
+#### Enhanced Capabilities (v1.1.0)
+- **Version Detection** - Automatic Docassemble version detection
+- **Enhanced Session Management** - Configurable timeouts and improved handling
+- **Graceful Fallbacks** - Robust handling of unsupported APIs
+- **Enhanced Error Handling** - Detailed error categorization and retry mechanisms
+
+### 🔧 Planned Features (In Development)
+
+#### User Management
+- Complete user profile management
+- User privilege and permission handling  
+- Password management operations
+
+#### Interview Management
+- Advanced interview actions and controls
+- Interview statistics and metadata
+- Session renaming and restart capabilities
+
+#### File Management
+- File upload and download operations
+- File conversion utilities (PDF, Markdown)
+- Complete playground file management
+- Interview file exploration
+
+#### Package Management
 - Package installation and updates
-- System restart and monitoring
-- Cache management
+- System maintenance operations
+- Server restart capabilities
 
-### File Operations
-- Template field extraction
-- File upload and download
-- Markdown conversion
-- Temporary data storage
+#### Configuration & Utilities
+- System configuration management
+- Communication tools (email, SMS)
+- Database operations and backups
+- YAML processing utilities
+- System health monitoring
+
+### 🚫 Known Limitations
+
+Some endpoints are not available on all Docassemble versions:
+- File conversion tools may not be supported
+- Some administrative functions require specific server configurations
+- Session-based operations may have compatibility issues with older versions
+
+### ⚠️ Important Notes
+
+- **API Rate Limiting**: The Docassemble API is not designed for high-volume operations. Please use reasonable delays between requests to avoid overwhelming the server.
+- **Session Management**: Some session-based operations may require active user sessions or specific interview states.
+- **Server Permissions**: Administrative functions require appropriate user privileges and server configurations.
 
 ## Installation
 
