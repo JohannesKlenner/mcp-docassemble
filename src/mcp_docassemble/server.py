@@ -983,31 +983,8 @@ class DocassembleServer:
                 ),
 
                 # ====================================================================
-                # DATA STASHING (2 Tools)
+                # DATA STASHING (1 Tool)
                 # ====================================================================
-                Tool(
-                    name="docassemble_stash_data",
-                    description="""Speichert Daten temporär verschlüsselt.
-                    
-                    Erforderliche Berechtigungen: Keine
-                    
-                    Parameter:
-                    - data (erforderlich): Zu speichernde Daten (JSON Objekt)
-                    - expire (optional): Ablaufzeit in Sekunden (default: 90 Tage)
-                    - raw (optional): Datum/Objekt Konvertierung überspringen
-                    
-                    Rückgabe: Dict mit stash_key und secret""",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "data": {"type": "object"},
-                            "expire": {"type": "integer"},
-                            "raw": {"type": "boolean"}
-                        },
-                        "required": ["data"]
-                    }
-                ),
-                
                 Tool(
                     name="docassemble_retrieve_stashed_data",
                     description="""Holt temporär gespeicherte Daten.
@@ -1136,7 +1113,6 @@ class DocassembleServer:
             "docassemble_get_interview_data": "get_interview_data",
             
             # Data Stashing
-            "docassemble_stash_data": "stash_data",
             "docassemble_retrieve_stashed_data": "retrieve_stashed_data"
         }
         

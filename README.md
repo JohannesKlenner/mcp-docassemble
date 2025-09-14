@@ -35,8 +35,9 @@ This MCP server exposes all 63 Docassemble API endpoints with enhanced reliabili
 
 ### 📊 Implementation Status
 
-**✅ Fully Working (9/63 - 14.3%)**
+**✅ Fully Working (10/63 - 15.9%)**
 - `list_users` - List all system users
+- `create_user` - Create new user accounts
 - `start_interview` - Start new interview sessions
 - `delete_interview_session` - Delete interview sessions
 - `list_interview_sessions` - List all interview sessions
@@ -59,8 +60,7 @@ This MCP server exposes all 63 Docassemble API endpoints with enhanced reliabili
 - `convert_file_to_markdown` - API endpoint not available on this Docassemble version  
 - `get_redirect_url` - API endpoint not available on this Docassemble version
 
-**🔄 Parameter/Session Issues (5/63 - 7.9%)**
-- `create_user` - Parameter validation issues
+**🔄 Parameter/Session Issues (4/63 - 6.3%)**
 - `get_interview_variables` - Session handling needs improvement
 - `set_interview_variables` - Session handling needs improvement
 - `uninstall_package` - Parameter validation issues
@@ -72,7 +72,8 @@ This MCP server exposes all 63 Docassemble API endpoints with enhanced reliabili
 
 #### User Management
 - List system users
-- User account management (parameter validation issues with creation)
+- Create new user accounts
+- User account management operations
 
 #### Interview Management  
 - Start and manage interview sessions

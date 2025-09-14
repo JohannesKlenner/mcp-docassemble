@@ -82,7 +82,7 @@ class DocassembleClient(DocassembleClientEnhanced):
         """Initialize feature compatibility matrix based on version."""
         self.feature_support = {
             'convert_file_to_markdown': False,  # Not available in current versions
-            'get_redirect_url': False,          # Not available in current versions  
+            'get_redirect_url': False,          # Now using correct /api/temp_url endpoint  
             'get_login_url': False,             # Limited availability
             'pull_package_to_playground': False, # Version dependent
             'advanced_session_management': True,  # Available but needs proper handling
@@ -232,7 +232,7 @@ class DocassembleClient(DocassembleClientEnhanced):
             
         return self._request('POST', '/api/user/new', data=data)
     
-    def invite_users(self, email_addresses: List[str], privileges: Optional[List[str]] = None,
+    def invite_users(self, email_addresses: List[str], privilege: Optional[str] = None,
                     send_emails: bool = True) -> List[Dict[str, Any]]:
         """
         Lädt neue Benutzer per E-Mail ein
@@ -241,19 +241,19 @@ class DocassembleClient(DocassembleClientEnhanced):
         
         Args:
             email_addresses: Liste der E-Mail Adressen
-            privileges: Liste der Benutzerrechte (optional)
+            privilege: Einzelnes Benutzerrecht (optional, default: 'user')
             send_emails: Ob E-Mail Einladungen gesendet werden sollen
             
         Returns:
             Liste mit Einladungsdetails für jede E-Mail
         """
         data = {'email_addresses': email_addresses}
-        if privileges:
-            data['privileges'] = privileges
+        if privilege:
+            data['privilege'] = privilege
         if not send_emails:
             data['send_emails'] = '0'
             
-        return self._request('POST', '/api/user/invite', data=data)
+        return self._request('POST', '/api/user_invite', data=data)
     
     def list_users(self, include_inactive: bool = False, next_id: Optional[str] = None) -> Dict[str, Any]:
         """
@@ -717,7 +717,7 @@ class DocassembleClient(DocassembleClientEnhanced):
     def get_login_url(self, username: str, password: str, i: Optional[str] = None,
                      session: Optional[str] = None, resume_existing: bool = False,
                      expire: int = 15, url_args: Optional[Dict] = None,
-                     next_page: Optional[str] = None) -> str:
+                     next: Optional[str] = None) -> str:
         """
         Erstellt temporäre Login URL für einen Benutzer
         
@@ -731,7 +731,7 @@ class DocassembleClient(DocassembleClientEnhanced):
             resume_existing: Ob existierende Session fortgesetzt werden soll
             expire: Ablaufzeit in Sekunden (default: 15)
             url_args: Zusätzliche URL Parameter
-            next_page: Seite nach Login (statt Interview)
+            next: Seite nach Login (statt Interview)
             
         Returns:
             Temporäre Login URL
@@ -747,8 +747,8 @@ class DocassembleClient(DocassembleClientEnhanced):
             data['expire'] = expire
         if url_args:
             data['url_args'] = url_args
-        if next_page:
-            data['next'] = next_page
+        if next:
+            data['next'] = next
             
         return self._request('POST', '/api/login_url', data=data)
     
@@ -776,24 +776,27 @@ class DocassembleClient(DocassembleClientEnhanced):
             
         return self._request('POST', '/api/resume_url', data=data)
     
-    def get_redirect_url(self, url: str, expire: int = 15) -> str:
+    def get_redirect_url(self, url: str, expire: int = 3600, one_time: bool = False) -> str:
         """
-        Erstellt allgemeine Redirect URL
+        Erstellt allgemeine Redirect URL (Official API: /api/temp_url)
         
         Benötigte Berechtigungen: Keine
         
         Args:
             url: Ziel URL
-            expire: Ablaufzeit in Sekunden
+            expire: Ablaufzeit in Sekunden (default: 3600)
+            one_time: URL verfällt nach einmaliger Nutzung
             
         Returns:
             Temporäre Redirect URL
         """
-        data = {'url': url}
-        if expire != 15:
-            data['expire'] = expire
+        params = {'url': url}
+        if expire != 3600:
+            params['expire'] = expire
+        if one_time:
+            params['one_time'] = 1
             
-        return self._request('POST', '/api/redirect_url', data=data)
+        return self._request('GET', '/api/temp_url', params=params)
 
     # ====================================================================
     # INTERVIEW OPERATIONS (8 Endpunkte)
@@ -1108,37 +1111,37 @@ class DocassembleClient(DocassembleClientEnhanced):
             
         return self._request('GET', '/api/playground/project', params=params)
     
-    def delete_playground_project(self, project: str, user_id: Optional[int] = None) -> None:
+    def delete_playground_project(self, name: str, user_id: Optional[int] = None) -> None:
         """
         Löscht ein Projekt aus dem Playground
         
         Benötigte Berechtigungen: admin, developer oder playground_control
         
         Args:
-            project: Projekt Name
+            name: Projekt Name
             user_id: Benutzer ID (optional)
         """
-        params = {'project': project}
+        params = {'name': name}
         if user_id:
             params['user_id'] = user_id
             
-        return self._request('DELETE', '/api/playground/project', params=params)
+        return self._request('DELETE', '/api/projects', params=params)
     
-    def create_playground_project(self, project: str, user_id: Optional[int] = None) -> None:
+    def create_playground_project(self, name: str, user_id: Optional[int] = None) -> None:
         """
         Erstellt ein neues Projekt im Playground
         
         Benötigte Berechtigungen: admin, developer oder playground_control
         
         Args:
-            project: Projekt Name
+            name: Projekt Name
             user_id: Benutzer ID (optional)
         """
-        data = {'project': project}
+        data = {'name': name}
         if user_id:
             data['user_id'] = user_id
             
-        return self._request('POST', '/api/playground/project', data=data)
+        return self._request('POST', '/api/projects', data=data)
     
     def pull_package_to_playground(self, user_id: Optional[int] = None, project: str = 'default',
                                   github_url: Optional[str] = None, branch: Optional[str] = None,
@@ -1272,6 +1275,36 @@ class DocassembleClient(DocassembleClientEnhanced):
             
         return self._request('POST', '/api/package', data=data, files=files if files else None)
     
+    def install_package(self, package: Optional[str] = None, github_url: Optional[str] = None,
+                       branch: Optional[str] = None, pip: Optional[str] = None,
+                       zip_file: Optional[Any] = None, restart: bool = True) -> Dict[str, str]:
+        """
+        Installiert ein Package (Alias für install_or_update_package)
+        
+        Benötigte Berechtigungen: admin oder developer
+        
+        Args:
+            package: Package Name (GitHub URL, PyPI name oder ZIP)
+            github_url: GitHub URL für Installation
+            branch: Git Branch (optional)
+            pip: PyPI Package Name
+            zip_file: ZIP Datei Upload
+            restart: Ob Server restartet werden soll
+            
+        Returns:
+            Task ID für Package Update Monitoring
+        """
+        # Vereinfachte Logik: versuche automatisch zu erkennen was für ein Package es ist
+        if package and package.startswith('http'):
+            github_url = package
+        elif package and not pip and not github_url:
+            pip = package
+            
+        return self.install_or_update_package(
+            github_url=github_url, branch=branch, pip=pip, 
+            zip_file=zip_file, restart=restart
+        )
+    
     def uninstall_package(self, package: str, restart: bool = True) -> Dict[str, str]:
         """
         Deinstalliert ein Package
@@ -1285,11 +1318,11 @@ class DocassembleClient(DocassembleClientEnhanced):
         Returns:
             Task ID für Package Update Monitoring
         """
-        data = {'package': package}
+        params = {'package': package}
         if not restart:
-            data['restart'] = '0'
+            params['restart'] = '0'
             
-        return self._request('DELETE', '/api/package', data=data)
+        return self._request('DELETE', '/api/package', params=params)
     
     def get_package_update_status(self, task_id: str) -> Dict[str, Any]:
         """
@@ -1565,21 +1598,8 @@ class DocassembleClient(DocassembleClientEnhanced):
         
         return self._request('POST', '/api/fields', data=data, files=files)
     
-    def convert_file_to_markdown(self, file_content: Any, filename: str) -> str:
-        """
-        Konvertiert eine Datei zu Markdown
-        
-        Benötigte Berechtigungen: admin, developer oder template_parse
-        
-        Args:
-            file_content: Dateiinhalt
-            filename: Dateiname
-            
-        Returns:
-            Konvertierter Markdown Text
-        """
-        files = {'file': (filename, file_content)}
-        return self._request('POST', '/api/to_markdown', files=files)
+    # NICHT-DOKUMENTIERTE ENDPUNKTE ENTFERNT  
+    # convert_file_to_markdown existiert nicht in der offiziellen API
     
     def get_interview_data(self, i: str) -> Dict[str, Any]:
         """
@@ -1599,27 +1619,8 @@ class DocassembleClient(DocassembleClientEnhanced):
     # DATA STASHING (2 Endpunkte)
     # ====================================================================
     
-    def stash_data(self, data: Dict[str, Any], expire: int = 7776000, raw: bool = False) -> Dict[str, str]:
-        """
-        Speichert Daten temporär verschlüsselt
-        
-        Benötigte Berechtigungen: Keine
-        
-        Args:
-            data: Zu speichernde Daten
-            expire: Ablaufzeit in Sekunden (default: 90 Tage)
-            raw: Ob Datum/Objekt Konvertierung übersprungen werden soll
-            
-        Returns:
-            Dict mit stash_key und secret
-        """
-        request_data = {'data': data}
-        if expire != 7776000:
-            request_data['expire'] = expire
-        if raw:
-            request_data['raw'] = '0'
-            
-        return self._request('POST', '/api/stash_data', data=request_data)
+    # NICHT-DOKUMENTIERTE ENDPUNKTE ENTFERNT
+    # stash_data und convert_file_to_markdown existieren nicht in der offiziellen API
     
     def retrieve_stashed_data(self, stash_key: str, secret: str, delete: bool = False,
                              refresh: Optional[int] = None) -> Any:
