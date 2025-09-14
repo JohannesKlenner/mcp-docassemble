@@ -42,7 +42,7 @@ This MCP server exposes all 61 Docassemble API endpoints, enabling comprehensive
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/your-username/mcp-docassemble.git
+git clone https://github.com/JohannesKlenner/mcp-docassemble.git
 cd mcp-docassemble
 ```
 
