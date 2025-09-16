@@ -97,12 +97,13 @@ jobs:
         run: pytest --cov=mcp_docassemble --cov-report=xml --cov-report=term-missing
 
       - name: Upload coverage
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: coverage-py${{ matrix.python-version }}-${{ github.sha }}
           path: |
             ${{ env.PROJECT_PATH }}/coverage.xml
-        if-no-files-found: error
+          if-no-files-found: error
 
   docker-build:
     name: Build and Scan Image
@@ -112,8 +113,6 @@ jobs:
       contents: read
       packages: write
       security-events: write
-    env:
-      IMAGE_URI: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -133,7 +132,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.IMAGE_URI }}
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -159,7 +158,7 @@ jobs:
         if: github.event_name != 'pull_request'
         uses: aquasecurity/trivy-action@0.19.0
         with:
-          image-ref: ${{ env.IMAGE_URI }}@${{ steps.build.outputs.digest }}
+          image-ref: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
           format: sarif
           output: trivy-results.sarif
           severity: CRITICAL,HIGH
@@ -175,7 +174,7 @@ jobs:
         if: always()
         run: |
           echo "## Docker image" >> $GITHUB_STEP_SUMMARY
-          echo "${{ env.IMAGE_URI }}" >> $GITHUB_STEP_SUMMARY
+          echo "${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}" >> $GITHUB_STEP_SUMMARY
           echo "Tags:" >> $GITHUB_STEP_SUMMARY
           echo '${{ steps.meta.outputs.tags }}' >> $GITHUB_STEP_SUMMARY
           echo "Digest: ${{ steps.build.outputs.digest }}" >> $GITHUB_STEP_SUMMARY
