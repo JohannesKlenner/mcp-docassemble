@@ -275,165 +275,56 @@ PLAYGROUND_URL=http://your-docassemble-server/playground/
 PRODUCTION_URL=http://your-docassemble-server/
 ```
 
-## 🎮 Verwendung
+## Usage
 
-### MCP Server starten
+### Start the MCP Server
 
 ```bash
 python -m mcp_docassemble
 ```
 
-### Mit Docker
+### Using with MCP-compatible Clients
 
-```bash
-# Mit Docker Compose (empfohlen)
-docker-compose up -d
+Configure your MCP client to connect to this server. The server will automatically load configuration from `.env` file or environment variables.
 
-# Oder direkt mit Docker
-docker run -d \
-  --name mcp-docassemble \
-  -p 8080:8080 \
-  --env-file .env \
-  ghcr.io/johannesklenner/mcp-docassemble:latest
-```
+## API Endpoints
 
-### Mit MCP-kompatiblen Clients verwenden
+The server provides all 61 Docassemble API endpoints, categorized as:
 
-Konfigurieren Sie Ihren MCP Client, um sich mit diesem Server zu verbinden. Der Server lädt automatisch die Konfiguration aus der `.env` Datei oder Umgebungsvariablen.
+- **User Management** (9 endpoints): User creation, updates, deletion, info retrieval
+- **Permissions** (4 endpoints): Role management, privilege granting/checking
+- **Interview Sessions** (12 endpoints): Session lifecycle, variable management, navigation
+- **Interview Operations** (8 endpoints): Interview actions, template operations
+- **Playground** (9 endpoints): File management, project operations, package handling
+- **System Administration** (8 endpoints): Server config, package installation, restarts
+- **API Key Management** (8 endpoints): API key lifecycle and permissions
+- **File Operations** (3 endpoints): Template fields, file processing, data storage
 
-### VS Code Task Integration
+Each endpoint is fully documented with:
+- Required parameters and data types
+- Optional parameters with defaults
+- Required permissions/privileges
+- Usage examples
+- Error handling and response formats
 
-Nach der Installation können Sie die integrierten VS Code Tasks verwenden:
+## Contributing
 
-```json
-// In tasks.json verfügbar:
-{
-  "label": "🔨 Build Package",
-  "type": "shell", 
-  "command": "python scripts/build_package.py"
-}
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
 
-{
-  "label": "🚀 Deploy to Playground",
-  "type": "shell",
-  "command": "python scripts/deploy_playground.py"
-}
-```
+## License
 
-**One-Click Workflow:**
-1. `Ctrl+Shift+P` → "Tasks: Run Task"
-2. Wählen Sie "🔨 Build Package" 
-3. Nach erfolgreichem Build: "🚀 Deploy to Playground"
+MIT License - see LICENSE file for details.
 
-## 📋 API Endpunkte
+## Disclaimer
 
-Der Server stellt alle 63 Docassemble API Endpunkte bereit, kategorisiert als:
+This software is provided "as is" without warranty of any kind. Use at your own risk.
 
-- **👥 Benutzerverwaltung** (9 Endpunkte): Benutzererstellung, Updates, Löschung, Info-Abruf
-- **🔐 Berechtigungen** (4 Endpunkte): Rollen-Management, Berechtigung gewähren/prüfen
-- **📝 Interview Sessions** (12 Endpunkte): Session-Lebenszyklus, Variablen-Management, Navigation
-- **⚡ Interview Operations** (8 Endpunkte): Interview-Aktionen, Template-Operationen
-- **🛠️ Playground** (9 Endpunkte): Dateiverwaltung, Projekt-Operationen, Package-Handling
-- **⚙️ System Administration** (8 Endpunkte): Server-Konfiguration, Package-Installation, Neustarts
-- **🔑 API Key Management** (8 Endpunkte): API-Key-Lebenszyklus und Berechtigungen
-- **📁 File Operations** (3 Endpunkte): Template-Felder, Dateiverarbeitung, Datenspeicherung
+## Requirements
 
-Jeder Endpunkt ist vollständig dokumentiert mit:
-- Erforderlichen Parametern und Datentypen
-- Optionalen Parametern mit Standardwerten
-- Erforderlichen Berechtigungen/Privilegien
-- Anwendungsbeispielen
-- Fehlerbehandlung und Antwortformaten
-
-## 🧪 Testing & Quality Assurance
-
-### Automatisierte Tests
-
-```bash
-# Unit Tests ausführen
-pytest tests/ -v
-
-# Coverage Report
-pytest --cov=src tests/
-
-# Integration Tests (benötigt laufenden Docassemble Server)
-python test_modular.py
-```
-
-### Code Quality
-
-```bash
-# Linting
-flake8 src/
-
-# Security Scan
-bandit -r src/
-
-# Type Checking
-mypy src/
-```
-
-### CI/CD Pipeline Status
-
-Die GitHub Actions Pipeline läuft automatisch bei:
-- Push zu main/develop Branches
-- Pull Requests
-- Version Tags (v*)
-
-**Pipeline Stages:**
-1. 🔒 Security Scanning (Bandit, Safety)
-2. 🧪 Unit Tests (Python 3.9-3.12)
-3. 🐳 Docker Build (Multi-arch)
-4. 🔍 Container Security (Trivy)
-5. 🧪 API Integration Tests
-6. 📤 Registry Push (GHCR)
-7. 🚀 Release Management
-
-## 🤝 Mitwirken
-
-1. Repository forken
-2. Feature Branch erstellen
-3. Änderungen vornehmen
-4. Tests hinzufügen (falls zutreffend)
-5. Pull Request einreichen
-
-### Development Setup
-
-```bash
-# Repository klonen
-git clone https://github.com/JohannesKlenner/mcp-docassemble.git
-cd mcp-docassemble
-
-# Development Dependencies installieren
-pip install -e ".[dev]"
-
-# Pre-commit hooks einrichten
-pre-commit install
-```
-
-## 📄 Lizenz
-
-MIT License - siehe LICENSE Datei für Details.
-
-## ⚠️ Haftungsausschluss
-
-Diese Software wird "wie sie ist" ohne jegliche Gewährleistung bereitgestellt. Verwendung auf eigene Gefahr.
-
-## 📋 Systemanforderungen
-
-- Python 3.9+
-- Zugang zu einem Docassemble Server
-- Gültiger Docassemble API Key mit entsprechenden Berechtigungen
-- Docker (optional, für Container-Deployment)
-
-## 🆘 Support & Dokumentation
-
-- **Issues**: [GitHub Issues](https://github.com/JohannesKlenner/mcp-docassemble/issues)
-- **Dokumentation**: [Docassemble API Docs](https://docassemble.org/docs/api.html)
-- **MCP Spezifikation**: [Model Context Protocol](https://modelcontextprotocol.io/)
-- **CI/CD Status**: [GitHub Actions](https://github.com/JohannesKlenner/mcp-docassemble/actions)
-- **Container Registry**: [GitHub Container Registry](https://github.com/JohannesKlenner/mcp-docassemble/pkgs/container/mcp-docassemble)
-
----
-
-**🚀 v1.1.1 Package Integration Enhanced** - Vollständige CI/CD Pipeline mit Security Scanning, Multi-Platform Docker Support und VS Code Task Integration für nahtlose Package-Entwicklung und -Deployment.
+- Python 3.8+
+- Access to a Docassemble server
+- Valid Docassemble API key with appropriate permissions
