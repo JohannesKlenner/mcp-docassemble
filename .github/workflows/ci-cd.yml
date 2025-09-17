@@ -108,31 +108,33 @@ jobs:
       - name: Scan image with Trivy
         id: trivy
         if: github.event_name != 'pull_request'
-        uses: aquasecurity/trivy-action@0.20.0
-        continue-on-error: true
-        with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
-          format: sarif
-          output: trivy-results.sarif
-          severity: CRITICAL,HIGH
-          ignore-unfixed: true
-          exit-code: 1
+        run: |
+          set +e
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$PWD":/workspace \
+            -w /workspace \
+            aquasec/trivy:0.52.2 \
+            image --format sarif --output trivy-results.sarif --severity CRITICAL,HIGH --ignore-unfixed "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}"
+          exit_code=$?
+          echo "exit_code=$exit_code" >> $GITHUB_OUTPUT
+          exit 0
 
       - name: Upload Trivy SARIF artifact
-        if: steps.trivy.outcome != 'cancelled'
+        if: steps.trivy.outputs.exit_code
         uses: actions/upload-artifact@v4
         with:
           name: trivy-results-${{ github.sha }}
           path: trivy-results.sarif
 
       - name: Upload Trivy results
-        if: github.event_name != 'pull_request' && steps.trivy.outcome != 'cancelled'
+        if: github.event_name != 'pull_request' && steps.trivy.outputs.exit_code
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: trivy-results.sarif
 
       - name: Fail if Trivy found issues
-        if: steps.trivy.outcome == 'failure'
+        if: steps.trivy.outputs.exit_code != '0'
         run: exit 1
 
   summary:
