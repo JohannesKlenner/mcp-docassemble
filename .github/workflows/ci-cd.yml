@@ -117,24 +117,29 @@ jobs:
             aquasec/trivy:0.52.2 \
             image --format sarif --output trivy-results.sarif --severity CRITICAL,HIGH --ignore-unfixed "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}"
           exit_code=$?
+          if [ -f trivy-results.sarif ]; then
+            echo "result_path=trivy-results.sarif" >> $GITHUB_OUTPUT
+          else
+            echo "result_path=" >> $GITHUB_OUTPUT
+          fi
           echo "exit_code=$exit_code" >> $GITHUB_OUTPUT
           exit 0
 
       - name: Upload Trivy SARIF artifact
-        if: steps.trivy.outputs.exit_code
+        if: steps.trivy.outputs.result_path != ''
         uses: actions/upload-artifact@v4
         with:
           name: trivy-results-${{ github.sha }}
-          path: trivy-results.sarif
+          path: ${{ steps.trivy.outputs.result_path }}
 
       - name: Upload Trivy results
-        if: github.event_name != 'pull_request' && steps.trivy.outputs.exit_code
+        if: github.event_name != 'pull_request' && steps.trivy.outputs.result_path != ''
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: trivy-results.sarif
+          sarif_file: ${{ steps.trivy.outputs.result_path }}
 
       - name: Fail if Trivy found issues
-        if: steps.trivy.outputs.exit_code != '0'
+        if: steps.trivy.outputs.exit_code != '' && steps.trivy.outputs.exit_code != '0'
         run: exit 1
 
   summary:
