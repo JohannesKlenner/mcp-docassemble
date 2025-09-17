@@ -2,6 +2,7 @@
 Test Base - Gemeinsame Funktionen für alle API-Tests
 """
 
+import os
 import time
 from typing import Any, Dict, Tuple
 
@@ -12,8 +13,14 @@ class APITestBase:
     """Basis-Klasse für alle API-Tests mit gemeinsamen Funktionen"""
 
     def __init__(self):
-        self.base_url = "http://192.168.178.29"
-        self.api_key = "X1IgbwNOk0b0LQ6LS46eSYfj8Ycj4ICU"
+        base_url = os.getenv("DOCASSEMBLE_BASE_URL")
+        api_key = os.getenv("DOCASSEMBLE_API_KEY")
+
+        if not base_url or not api_key:
+            raise RuntimeError("DOCASSEMBLE_BASE_URL und DOCASSEMBLE_API_KEY müssen gesetzt sein, um die Live-Tests auszuführen")
+
+        self.base_url = base_url.rstrip("/")
+        self.api_key = api_key
         self.client = DocassembleClient(self.base_url, self.api_key)
         self.delay = 2  # Sekunden zwischen Tests
 
