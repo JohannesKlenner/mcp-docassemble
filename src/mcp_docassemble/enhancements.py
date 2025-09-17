@@ -177,8 +177,8 @@ class DocassembleClientEnhanced:
 
                     time.sleep(1)  # Brief pause before retry
                     return self._request(method, endpoint, **kwargs)
-                except Exception:
-                    pass  # Fall through to original error
+                except Exception as retry_error:
+                    logger.warning("Retry attempt for %s failed: %s; returning original error", endpoint, retry_error)
 
             raise
 
