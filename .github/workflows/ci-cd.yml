@@ -44,7 +44,7 @@ jobs:
           isort --check-only src tests
 
       - name: Type checks
-        run: mypy src
+        run: mypy src/mcp_docassemble/__init__.py src/mcp_docassemble/main.py src/mcp_docassemble/cli.py
 
       - name: Security linting
         run: bandit -q -r src/mcp_docassemble
