@@ -10,7 +10,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner | toLower }}/mcp-docassemble
+  IMAGE_OWNER: ${{ github.repository_owner }}
+  IMAGE_NAME: mcp-docassemble
 
 jobs:
   quality:
@@ -83,7 +84,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -108,14 +109,18 @@ jobs:
       - name: Scan image with Trivy
         id: trivy
         if: github.event_name != 'pull_request'
+        env:
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
         run: |
           set +e
+          owner_lower="${IMAGE_OWNER,,}"
+          image_ref="${REGISTRY}/${owner_lower}/${IMAGE_NAME}@${IMAGE_DIGEST}"
           docker run --rm \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v "$PWD":/workspace \
             -w /workspace \
             aquasec/trivy:0.52.2 \
-            image --format sarif --output trivy-results.sarif --severity CRITICAL,HIGH --ignore-unfixed "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}"
+            image --format sarif --output trivy-results.sarif --severity CRITICAL,HIGH --ignore-unfixed "$image_ref"
           exit_code=$?
           if [ -f trivy-results.sarif ]; then
             echo "result_path=trivy-results.sarif" >> $GITHUB_OUTPUT
