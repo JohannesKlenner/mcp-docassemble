@@ -74,12 +74,16 @@ python_version = "3.10"
 warn_unused_configs = true
 ignore_missing_imports = true
 explicit_package_bases = true
+mypy_path = ["src"]
 
 [[tool.mypy.overrides]]
 module = [
     "mcp_docassemble.client",
     "mcp_docassemble.enhancements",
     "mcp_docassemble.server",
+    "src.mcp_docassemble.client",
+    "src.mcp_docassemble.enhancements",
+    "src.mcp_docassemble.server",
 ]
 ignore_errors = true
 
