@@ -1,71 +1,66 @@
-# Docassemble MCP Server
-# Local development files
+# Environment files
 .env
 .env.local
 .env.development
 .env.test
 .env.production
 
-# Python
+# Python cache and bytecode
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
-.Python
+
+# Build and distribution artifacts
 build/
-develop-eggs/
 dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
 *.egg-info/
-.installed.cfg
 *.egg
+*.whl
 MANIFEST
 
-# PyInstaller
-*.manifest
-*.spec
-
-# Unit test / coverage reports
-htmlcov/
+# Static analysis and tool caches
+.mypy_cache/
+.pytest_cache/
 .tox/
 .nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
+.cache/
 .hypothesis/
-.pytest_cache/
 cover/
 
+# Coverage data
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
 # Virtual environments
-.env
-.venv
+.venv/
+.env/
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
 
-# IDEs
+# Logs and temp files
+*.log
+logs/
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# IDE / editor settings
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# OS
+# OS-generated files
 .DS_Store
 .DS_Store?
 ._*
@@ -74,12 +69,75 @@ venv.bak/
 ehthumbs.db
 Thumbs.db
 
-# Logs
-*.log
-logs/
+# CI artifacts
+bandit-report.json
+safety-report.json
 
-# Temporary files
-*.tmp
-*.temp
-.tmp/
-.temp/
+# Local release artifacts
+mcp-docassemble-*.whl
+
+# Legacy local tooling and reports (kept locally only)
+3_NOT_SUPPORTED_ANALYSIS.md
+API_KEY_BACKUP.md
+CHANGELOG_v1.1.0_Enhanced.md
+DOCKER_ANALYSIS.md
+DOCKER_README.md
+FAILING_ENDPOINTS_ANALYSIS.md
+FINAL_TEST_REPORT_v1.1.0_Enhanced.md
+FINAL_TEST_SUMMARY.md
+FINAL_VERSION_ANALYSIS.md
+LIVE_SERVER_ANALYSIS.md
+NEXT_STEPS.md
+OFFICIAL_API_ENDPOINTS.md
+README_FULL.md
+README_OLD.md
+README_OLD_v1.1.1.md
+REMAINING_FAILED_ENDPOINTS.md
+SETUP.md
+SYSTEMATIC_API_TEST.md
+TEST_REPORT.md
+TEST_SUMMARY_v1.1.0.md
+UPDATED_TEST_SUMMARY_v1.1.0.md
+UPDATE_v1.1.1.md
+UPGRADE_GUIDE.md
+alternative_admin_access.py
+analyze_container_logs.py
+analyze_failing_endpoints.py
+analyze_installation.py
+api_key_search.py
+check_da_version.py
+corrected_server_commands.sh
+detailed_server_analysis.py
+docker_restart_guide.py
+extended_version_check.py
+final_endpoint_test.py
+final_login_test.py
+find_admin_routes.py
+fix_filesystem_error.py
+fix_port_login_problem.py
+generate_api_key.py
+install.py
+manual_credential_verification.py
+meta_interview_demo.yml
+monitor_restart.py
+nginx_gateway_diagnose.py
+quick_port_test.py
+register_admin.py
+restart_analysis.py
+restart_commands.sh
+server_commands.sh
+server_status_check.py
+show_container_logs.py
+simple_version_check.py
+test-deploy.md
+test-trigger.txt
+test_all_endpoints.py
+test_auth_fixes.py
+test_core_functionality.py
+test_correct_credentials.py
+test_default_login.py
+test_endpoints_with_delays.py
+test_enhancements.py
+test_modular.py
+test_remaining_failed.py
+test_single_endpoint.py

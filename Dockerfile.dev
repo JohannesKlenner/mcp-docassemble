@@ -1,64 +1,24 @@
-# Development Dockerfile für MCP Docassemble Server
-# Hot reload, debugging tools, relaxed security
-
 FROM python:3.12-slim
 
-# Development metadata
-LABEL maintainer="MCP Docassemble Team"
-LABEL description="MCP Docassemble Server - Development"
-LABEL version="1.1.0-dev"
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1
 
-# Install development dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    libc6-dev \
-    curl \
-    vim \
     git \
-    htop \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Create development user (with sudo for debugging)
-RUN groupadd -r mcp --gid=1000 && \
-    useradd -r -g mcp --uid=1000 --home-dir=/app --shell=/bin/bash mcp && \
-    mkdir -p /app && chown mcp:mcp /app
+RUN groupadd --system mcp && useradd --system --gid mcp --create-home mcp
 
-# Set up application directory
 WORKDIR /app
+COPY pyproject.toml README.md ./
+RUN python -m pip install --upgrade pip && python -m pip install -e '.[dev]'
 
-# Install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY src ./src
+COPY tests ./tests
 
-# Install development tools
-RUN pip install --no-cache-dir \
-    flask-cors \
-    watchdog \
-    python-lsp-server \
-    debugpy \
-    ipython \
-    jupyter
-
-# Switch to development user
 USER mcp
 
-# Set up development environment
-ENV PYTHONPATH="/app/src:/app"
-ENV PYTHONUNBUFFERED=1
-ENV FLASK_ENV=development
-ENV FLASK_DEBUG=1
-
-# Development configuration
-ENV MCP_HOST=0.0.0.0
-ENV MCP_PORT=8080
-ENV LOG_LEVEL=DEBUG
-ENV LOG_FORMAT=simple
-
-# Create directories
-RUN mkdir -p /app/logs /app/tmp
-
-# Expose ports
-EXPOSE 8080 5678
-
-# Development startup with hot reload
-CMD ["python", "-m", "flask", "--app", "mcp_docassemble.server:app", "run", "--host=0.0.0.0", "--port=8080", "--debug"]
+ENTRYPOINT ["mcp-docassemble"]
+CMD ["serve"]

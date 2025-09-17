@@ -1,32 +1,7 @@
-# Production requirements for MCP Docassemble Server
-# All dependencies pinned for security and reproducibility
-
-# Core framework
-flask==3.0.0
-gunicorn==21.2.0
-
-# HTTP client for Docassemble API
-requests==2.31.0
-urllib3==2.1.0
-
-# Security and validation
-cryptography==41.0.8
-certifi==2023.11.17
-
-# Logging and monitoring
-structlog==23.2.0
-python-json-logger==2.0.4
-
-# Configuration management
-python-dotenv==1.0.0
-
-# Development and testing (dev only)
-pytest==7.4.3
-pytest-cov==4.1.0
-black==23.11.0
-flake8==6.1.0
-mypy==1.7.0
-
-# Security scanning
-safety==2.3.5
-bandit==1.7.5
+# Runtime dependencies mirror the pyproject metadata
+mcp>=1.0.0
+requests>=2.31.0
+pydantic>=2.0.0
+typing-extensions>=4.0.0
+python-dateutil>=2.8.0
+python-dotenv>=1.0.0
