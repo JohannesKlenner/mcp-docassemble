@@ -72,3 +72,8 @@ class APITestBase:
             print(f"{status} {endpoint}: {message}")
         
         return successful, total
+
+
+# Backwards compatibility alias expected by other test modules
+BaseTest = APITestBase
+
