@@ -17,8 +17,9 @@ import os
 import sys
 from typing import Optional
 
-from .client import DocassembleClient, DocassembleAPIError
-from .main import main as run_server, setup_logging, validate_environment
+from .client import DocassembleAPIError, DocassembleClient
+from .main import main as run_server
+from .main import setup_logging, validate_environment
 
 
 def test_connection(base_url: str, api_key: str) -> bool:
@@ -26,17 +27,19 @@ def test_connection(base_url: str, api_key: str) -> bool:
     try:
         client = DocassembleClient(base_url, api_key)
         result = client.get_current_user()
-        print(f"✅ Verbindung erfolgreich! Angemeldet als: {result.get('email', 'Unbekannt')}")
+        print(
+            f"✅ Verbindung erfolgreich! Angemeldet als: {result.get('email', 'Unbekannt')}"
+        )
         print(f"   Benutzer ID: {result.get('id', 'Unbekannt')}")
         print(f"   Berechtigungen: {', '.join(result.get('privileges', []))}")
         return True
-        
+
     except DocassembleAPIError as e:
         print(f"❌ API Fehler: {e}")
         if e.status_code:
             print(f"   HTTP Status: {e.status_code}")
         return False
-        
+
     except Exception as e:
         print(f"❌ Verbindungsfehler: {e}")
         return False
@@ -49,20 +52,26 @@ async def serve_command(args):
 
 def test_command(args):
     """Testet die Verbindung zur Docassemble API"""
-    base_url = args.base_url or os.getenv('DOCASSEMBLE_BASE_URL')
-    api_key = args.api_key or os.getenv('DOCASSEMBLE_API_KEY')
-    
+    base_url = args.base_url or os.getenv("DOCASSEMBLE_BASE_URL")
+    api_key = args.api_key or os.getenv("DOCASSEMBLE_API_KEY")
+
     if not base_url:
-        print("❌ Fehler: DOCASSEMBLE_BASE_URL fehlt (--base-url oder Umgebungsvariable)", file=sys.stderr)
+        print(
+            "❌ Fehler: DOCASSEMBLE_BASE_URL fehlt (--base-url oder Umgebungsvariable)",
+            file=sys.stderr,
+        )
         sys.exit(1)
-        
+
     if not api_key:
-        print("❌ Fehler: DOCASSEMBLE_API_KEY fehlt (--api-key oder Umgebungsvariable)", file=sys.stderr)
+        print(
+            "❌ Fehler: DOCASSEMBLE_API_KEY fehlt (--api-key oder Umgebungsvariable)",
+            file=sys.stderr,
+        )
         sys.exit(1)
-    
+
     print(f"🔄 Teste Verbindung zu {base_url}...")
     success = test_connection(base_url, api_key)
-    
+
     if not success:
         print("\n💡 Überprüfe:")
         print("   • Base URL ist korrekt und erreichbar")
@@ -84,59 +93,51 @@ Beispiele:
 Umgebungsvariablen:
   DOCASSEMBLE_BASE_URL    Base URL der Docassemble Installation
   DOCASSEMBLE_API_KEY     API Key für Authentifizierung
-        """
+        """,
     )
-    
+
     parser.add_argument(
-        '--verbose', '-v',
-        action='store_true',
-        help='Ausführliche Ausgabe aktivieren'
+        "--verbose", "-v", action="store_true", help="Ausführliche Ausgabe aktivieren"
     )
-    
-    subparsers = parser.add_subparsers(dest='command', help='Verfügbare Befehle')
-    
+
+    subparsers = parser.add_subparsers(dest="command", help="Verfügbare Befehle")
+
     # Serve command
-    serve_parser = subparsers.add_parser(
-        'serve',
-        help='Startet den MCP Server'
-    )
+    serve_parser = subparsers.add_parser("serve", help="Startet den MCP Server")
     serve_parser.set_defaults(func=serve_command)
-    
+
     # Test command
     test_parser = subparsers.add_parser(
-        'test-connection',
-        help='Testet die Verbindung zur Docassemble API'
+        "test-connection", help="Testet die Verbindung zur Docassemble API"
     )
     test_parser.add_argument(
-        '--base-url',
-        help='Docassemble Base URL (überschreibt Umgebungsvariable)'
+        "--base-url", help="Docassemble Base URL (überschreibt Umgebungsvariable)"
     )
     test_parser.add_argument(
-        '--api-key',
-        help='API Key (überschreibt Umgebungsvariable)'
+        "--api-key", help="API Key (überschreibt Umgebungsvariable)"
     )
     test_parser.set_defaults(func=test_command)
-    
+
     args = parser.parse_args()
-    
+
     # Setup logging based on verbosity
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG)
     else:
         setup_logging()
-    
+
     # Default to serve if no command given
     if not args.command:
-        args.command = 'serve'
+        args.command = "serve"
         args.func = serve_command
-    
+
     # Execute command
-    if args.command == 'serve':
+    if args.command == "serve":
         validate_environment()
         asyncio.run(args.func(args))
     else:
         args.func(args)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -16,8 +16,9 @@ from urllib.parse import urlparse
 # Load environment variables from .env file
 try:
     from dotenv import load_dotenv
+
     # Look for .env file in project root
-    env_path = Path(__file__).parent.parent.parent / '.env'
+    env_path = Path(__file__).parent.parent.parent / ".env"
     if env_path.exists():
         load_dotenv(env_path)
         logging.info(f"Loaded environment from {env_path}")
@@ -32,37 +33,36 @@ from mcp.server import Server
 from mcp.server.models import InitializationOptions
 from mcp.server.stdio import stdio_server
 from mcp.types import (
-    CallToolRequest, 
+    CallToolRequest,
     CallToolResult,
+    JSONRPCError,
     ListToolsRequest,
     ListToolsResult,
-    Tool,
     TextContent,
-    JSONRPCError
+    Tool,
 )
 from pydantic import BaseModel
 
-from .client import DocassembleClient, DocassembleAPIError
-
+from .client import DocassembleAPIError, DocassembleClient
 
 logger = logging.getLogger(__name__)
 
 
 class DocassembleServer:
     """MCP Server für umfassende Docassemble API Integration"""
-    
+
     def __init__(self):
         self.server = Server("docassemble-mcp")
         self.client: Optional[DocassembleClient] = None
         self._setup_handlers()
-    
+
     def _setup_handlers(self):
         """Registriert alle MCP Handler"""
-        
+
         @self.server.list_tools()
         async def list_tools(request: ListToolsRequest) -> ListToolsResult:
             """Listet alle verfügbaren Docassemble API Tools"""
-            
+
             tools = [
                 # ====================================================================
                 # BENUTZER-MANAGEMENT (9 Tools)
@@ -91,27 +91,44 @@ class DocassembleServer:
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "username": {"type": "string", "description": "E-Mail Adresse des Benutzers"},
-                            "password": {"type": "string", "description": "Passwort (optional)"},
+                            "username": {
+                                "type": "string",
+                                "description": "E-Mail Adresse des Benutzers",
+                            },
+                            "password": {
+                                "type": "string",
+                                "description": "Passwort (optional)",
+                            },
                             "privileges": {
-                                "type": "array", 
+                                "type": "array",
                                 "items": {"type": "string"},
-                                "description": "Liste der Benutzerrechte"
+                                "description": "Liste der Benutzerrechte",
                             },
                             "first_name": {"type": "string", "description": "Vorname"},
                             "last_name": {"type": "string", "description": "Nachname"},
                             "country": {"type": "string", "description": "Ländercode"},
-                            "subdivisionfirst": {"type": "string", "description": "Bundesland/Staat"},
-                            "subdivisionsecond": {"type": "string", "description": "Landkreis"},
-                            "subdivisionthird": {"type": "string", "description": "Gemeinde"},
-                            "organization": {"type": "string", "description": "Organisation"},
+                            "subdivisionfirst": {
+                                "type": "string",
+                                "description": "Bundesland/Staat",
+                            },
+                            "subdivisionsecond": {
+                                "type": "string",
+                                "description": "Landkreis",
+                            },
+                            "subdivisionthird": {
+                                "type": "string",
+                                "description": "Gemeinde",
+                            },
+                            "organization": {
+                                "type": "string",
+                                "description": "Organisation",
+                            },
                             "timezone": {"type": "string", "description": "Zeitzone"},
-                            "language": {"type": "string", "description": "Sprachcode"}
+                            "language": {"type": "string", "description": "Sprachcode"},
                         },
-                        "required": ["username"]
-                    }
+                        "required": ["username"],
+                    },
                 ),
-                
                 Tool(
                     name="docassemble_invite_users",
                     description="""Lädt neue Benutzer per E-Mail ins Docassemble System ein.
@@ -130,19 +147,21 @@ class DocassembleServer:
                             "email_addresses": {
                                 "type": "array",
                                 "items": {"type": "string"},
-                                "description": "Liste der E-Mail Adressen"
+                                "description": "Liste der E-Mail Adressen",
                             },
                             "privileges": {
                                 "type": "array",
                                 "items": {"type": "string"},
-                                "description": "Liste der Benutzerrechte"
+                                "description": "Liste der Benutzerrechte",
                             },
-                            "send_emails": {"type": "boolean", "description": "Ob E-Mails gesendet werden sollen"}
+                            "send_emails": {
+                                "type": "boolean",
+                                "description": "Ob E-Mails gesendet werden sollen",
+                            },
                         },
-                        "required": ["email_addresses"]
-                    }
+                        "required": ["email_addresses"],
+                    },
                 ),
-                
                 Tool(
                     name="docassemble_list_users",
                     description="""Listet alle registrierten Benutzer im System (paginiert).
@@ -157,12 +176,17 @@ class DocassembleServer:
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "include_inactive": {"type": "boolean", "description": "Inaktive Benutzer einschließen"},
-                            "next_id": {"type": "string", "description": "ID für nächste Seite"}
-                        }
-                    }
+                            "include_inactive": {
+                                "type": "boolean",
+                                "description": "Inaktive Benutzer einschließen",
+                            },
+                            "next_id": {
+                                "type": "string",
+                                "description": "ID für nächste Seite",
+                            },
+                        },
+                    },
                 ),
-                
                 Tool(
                     name="docassemble_get_user_by_username",
                     description="""Holt Benutzerinformationen per Benutzername (E-Mail).
@@ -176,12 +200,14 @@ class DocassembleServer:
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "username": {"type": "string", "description": "Benutzername (E-Mail)"}
+                            "username": {
+                                "type": "string",
+                                "description": "Benutzername (E-Mail)",
+                            }
                         },
-                        "required": ["username"]
-                    }
+                        "required": ["username"],
+                    },
                 ),
-                
                 Tool(
                     name="docassemble_get_current_user",
                     description="""Holt Informationen über den aktuellen Benutzer (API Key Besitzer).
@@ -189,9 +215,8 @@ class DocassembleServer:
                     Erforderliche Berechtigungen: Keine
                     
                     Rückgabe: Benutzerinformationen des API Key Besitzers""",
-                    inputSchema={"type": "object", "properties": {}}
+                    inputSchema={"type": "object", "properties": {}},
                 ),
-                
                 Tool(
                     name="docassemble_update_current_user",
                     description="""Aktualisiert Informationen des aktuellen Benutzers.
@@ -223,11 +248,10 @@ class DocassembleServer:
                             "timezone": {"type": "string"},
                             "language": {"type": "string"},
                             "password": {"type": "string"},
-                            "old_password": {"type": "string"}
-                        }
-                    }
+                            "old_password": {"type": "string"},
+                        },
+                    },
                 ),
-                
                 Tool(
                     name="docassemble_get_user_by_id",
                     description="""Holt Informationen über einen Benutzer per ID.
@@ -243,10 +267,9 @@ class DocassembleServer:
                         "properties": {
                             "user_id": {"type": "integer", "description": "Benutzer ID"}
                         },
-                        "required": ["user_id"]
-                    }
+                        "required": ["user_id"],
+                    },
                 ),
-                
                 Tool(
                     name="docassemble_deactivate_user",
                     description="""Deaktiviert oder löscht einen Benutzer.
@@ -259,13 +282,18 @@ class DocassembleServer:
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "user_id": {"type": "integer", "description": "Benutzer ID"},
-                            "remove": {"type": "string", "enum": ["account", "account_and_shared"]}
+                            "user_id": {
+                                "type": "integer",
+                                "description": "Benutzer ID",
+                            },
+                            "remove": {
+                                "type": "string",
+                                "enum": ["account", "account_and_shared"],
+                            },
                         },
-                        "required": ["user_id"]
-                    }
+                        "required": ["user_id"],
+                    },
                 ),
-                
                 Tool(
                     name="docassemble_update_user",
                     description="""Aktualisiert Informationen eines Benutzers.
@@ -279,7 +307,10 @@ class DocassembleServer:
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "user_id": {"type": "integer", "description": "Benutzer ID"},
+                            "user_id": {
+                                "type": "integer",
+                                "description": "Benutzer ID",
+                            },
                             "country": {"type": "string"},
                             "first_name": {"type": "string"},
                             "language": {"type": "string"},
@@ -291,12 +322,11 @@ class DocassembleServer:
                             "timezone": {"type": "string"},
                             "password": {"type": "string"},
                             "old_password": {"type": "string"},
-                            "active": {"type": "boolean"}
+                            "active": {"type": "boolean"},
                         },
-                        "required": ["user_id"]
-                    }
+                        "required": ["user_id"],
+                    },
                 ),
-
                 # ====================================================================
                 # BERECHTIGUNGEN (4 Tools)
                 # ====================================================================
@@ -307,9 +337,8 @@ class DocassembleServer:
                     Erforderliche Berechtigungen: admin, developer oder access_privileges
                     
                     Rückgabe: Liste der verfügbaren Berechtigungsnamen""",
-                    inputSchema={"type": "object", "properties": {}}
+                    inputSchema={"type": "object", "properties": {}},
                 ),
-                
                 Tool(
                     name="docassemble_give_user_privilege",
                     description="""Gibt einem Benutzer eine Berechtigung.
@@ -322,13 +351,18 @@ class DocassembleServer:
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "user_id": {"type": "integer", "description": "Benutzer ID"},
-                            "privilege": {"type": "string", "description": "Berechtigung"}
+                            "user_id": {
+                                "type": "integer",
+                                "description": "Benutzer ID",
+                            },
+                            "privilege": {
+                                "type": "string",
+                                "description": "Berechtigung",
+                            },
                         },
-                        "required": ["user_id", "privilege"]
-                    }
+                        "required": ["user_id", "privilege"],
+                    },
                 ),
-                
                 Tool(
                     name="docassemble_remove_user_privilege",
                     description="""Entzieht einem Benutzer eine Berechtigung.
@@ -341,13 +375,18 @@ class DocassembleServer:
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "user_id": {"type": "integer", "description": "Benutzer ID"},
-                            "privilege": {"type": "string", "description": "Berechtigung"}
+                            "user_id": {
+                                "type": "integer",
+                                "description": "Benutzer ID",
+                            },
+                            "privilege": {
+                                "type": "string",
+                                "description": "Berechtigung",
+                            },
                         },
-                        "required": ["user_id", "privilege"]
-                    }
+                        "required": ["user_id", "privilege"],
+                    },
                 ),
-
                 # ====================================================================
                 # INTERVIEW SESSIONS (10 Tools)
                 # ====================================================================
@@ -371,16 +410,18 @@ class DocassembleServer:
                         "type": "object",
                         "properties": {
                             "secret": {"type": "string"},
-                            "i": {"type": "string", "description": "Interview Dateiname"},
+                            "i": {
+                                "type": "string",
+                                "description": "Interview Dateiname",
+                            },
                             "session": {"type": "string", "description": "Session ID"},
                             "query": {"type": "string", "description": "Query String"},
                             "tag": {"type": "string"},
                             "include_dictionary": {"type": "boolean"},
-                            "next_id": {"type": "string"}
-                        }
-                    }
+                            "next_id": {"type": "string"},
+                        },
+                    },
                 ),
-                
                 Tool(
                     name="docassemble_delete_interview_sessions",
                     description="""Löscht Interview Sessions im System.
@@ -400,11 +441,10 @@ class DocassembleServer:
                             "i": {"type": "string"},
                             "session": {"type": "string"},
                             "query": {"type": "string"},
-                            "tag": {"type": "string"}
-                        }
-                    }
+                            "tag": {"type": "string"},
+                        },
+                    },
                 ),
-                
                 Tool(
                     name="docassemble_list_advertised_interviews",
                     description="""Holt Liste der beworbenen/verfügbaren Interviews.
@@ -420,11 +460,10 @@ class DocassembleServer:
                         "type": "object",
                         "properties": {
                             "tag": {"type": "string"},
-                            "absolute_urls": {"type": "boolean"}
-                        }
-                    }
+                            "absolute_urls": {"type": "boolean"},
+                        },
+                    },
                 ),
-                
                 Tool(
                     name="docassemble_get_user_secret",
                     description="""Holt Entschlüsselungskey für einen Benutzer.
@@ -440,12 +479,11 @@ class DocassembleServer:
                         "type": "object",
                         "properties": {
                             "username": {"type": "string"},
-                            "password": {"type": "string"}
+                            "password": {"type": "string"},
                         },
-                        "required": ["username", "password"]
-                    }
+                        "required": ["username", "password"],
+                    },
                 ),
-                
                 Tool(
                     name="docassemble_get_login_url",
                     description="""Erstellt temporäre Login URL für einen Benutzer.
@@ -473,12 +511,11 @@ class DocassembleServer:
                             "resume_existing": {"type": "boolean"},
                             "expire": {"type": "integer"},
                             "url_args": {"type": "object"},
-                            "next_page": {"type": "string"}
+                            "next_page": {"type": "string"},
                         },
-                        "required": ["username", "password"]
-                    }
+                        "required": ["username", "password"],
+                    },
                 ),
-
                 # ====================================================================
                 # INTERVIEW OPERATIONS (8 Tools)
                 # ====================================================================
@@ -497,14 +534,19 @@ class DocassembleServer:
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "i": {"type": "string", "description": "Interview Dateiname"},
-                            "secret": {"type": "string", "description": "Verschlüsselungskey"}
+                            "i": {
+                                "type": "string",
+                                "description": "Interview Dateiname",
+                            },
+                            "secret": {
+                                "type": "string",
+                                "description": "Verschlüsselungskey",
+                            },
                         },
                         "required": ["i"],
-                        "additionalProperties": True
-                    }
+                        "additionalProperties": True,
+                    },
                 ),
-                
                 Tool(
                     name="docassemble_get_interview_variables",
                     description="""Holt alle Variablen aus einer Interview Session.
@@ -522,12 +564,11 @@ class DocassembleServer:
                         "properties": {
                             "i": {"type": "string"},
                             "session": {"type": "string"},
-                            "secret": {"type": "string"}
+                            "secret": {"type": "string"},
                         },
-                        "required": ["i", "session"]
-                    }
+                        "required": ["i", "session"],
+                    },
                 ),
-                
                 Tool(
                     name="docassemble_set_interview_variables",
                     description="""Setzt Variablen in einer Interview Session.
@@ -555,12 +596,14 @@ class DocassembleServer:
                             "raw": {"type": "boolean"},
                             "question_name": {"type": "string"},
                             "question": {"type": "boolean"},
-                            "delete_variables": {"type": "array", "items": {"type": "string"}}
+                            "delete_variables": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
                         },
-                        "required": ["i", "session"]
-                    }
+                        "required": ["i", "session"],
+                    },
                 ),
-                
                 Tool(
                     name="docassemble_get_current_question",
                     description="""Holt Informationen über die aktuelle Frage in einem Interview.
@@ -578,12 +621,11 @@ class DocassembleServer:
                         "properties": {
                             "i": {"type": "string"},
                             "session": {"type": "string"},
-                            "secret": {"type": "string"}
+                            "secret": {"type": "string"},
                         },
-                        "required": ["i", "session"]
-                    }
+                        "required": ["i", "session"],
+                    },
                 ),
-                
                 Tool(
                     name="docassemble_run_interview_action",
                     description="""Führt eine Aktion in einem Interview aus.
@@ -611,12 +653,11 @@ class DocassembleServer:
                             "persistent": {"type": "boolean"},
                             "arguments": {"type": "object"},
                             "overwrite": {"type": "boolean"},
-                            "read_only": {"type": "boolean"}
+                            "read_only": {"type": "boolean"},
                         },
-                        "required": ["i", "session", "action"]
-                    }
+                        "required": ["i", "session", "action"],
+                    },
                 ),
-                
                 Tool(
                     name="docassemble_go_back_in_interview",
                     description="""Geht einen Schritt zurück in der Interview Session.
@@ -636,12 +677,11 @@ class DocassembleServer:
                             "i": {"type": "string"},
                             "session": {"type": "string"},
                             "secret": {"type": "string"},
-                            "question": {"type": "boolean"}
+                            "question": {"type": "boolean"},
                         },
-                        "required": ["i", "session"]
-                    }
+                        "required": ["i", "session"],
+                    },
                 ),
-                
                 Tool(
                     name="docassemble_delete_interview_session",
                     description="""Löscht eine spezifische Interview Session.
@@ -655,12 +695,11 @@ class DocassembleServer:
                         "type": "object",
                         "properties": {
                             "i": {"type": "string"},
-                            "session": {"type": "string"}
+                            "session": {"type": "string"},
                         },
-                        "required": ["i", "session"]
-                    }
+                        "required": ["i", "session"],
+                    },
                 ),
-
                 # ====================================================================
                 # PLAYGROUND (9 Tools)
                 # ====================================================================
@@ -681,13 +720,22 @@ class DocassembleServer:
                         "type": "object",
                         "properties": {
                             "user_id": {"type": "integer"},
-                            "folder": {"type": "string", "enum": ["questions", "sources", "static", "templates", "modules", "packages"]},
+                            "folder": {
+                                "type": "string",
+                                "enum": [
+                                    "questions",
+                                    "sources",
+                                    "static",
+                                    "templates",
+                                    "modules",
+                                    "packages",
+                                ],
+                            },
                             "project": {"type": "string"},
-                            "filename": {"type": "string"}
-                        }
-                    }
+                            "filename": {"type": "string"},
+                        },
+                    },
                 ),
-                
                 Tool(
                     name="docassemble_delete_playground_file",
                     description="""Löscht eine Datei aus dem Playground.
@@ -707,12 +755,11 @@ class DocassembleServer:
                             "filename": {"type": "string"},
                             "user_id": {"type": "integer"},
                             "folder": {"type": "string"},
-                            "project": {"type": "string"}
+                            "project": {"type": "string"},
                         },
-                        "required": ["filename"]
-                    }
+                        "required": ["filename"],
+                    },
                 ),
-                
                 Tool(
                     name="docassemble_list_playground_projects",
                     description="""Listet Projekte im Playground.
@@ -725,12 +772,9 @@ class DocassembleServer:
                     Rückgabe: Liste der Projekt Namen""",
                     inputSchema={
                         "type": "object",
-                        "properties": {
-                            "user_id": {"type": "integer"}
-                        }
-                    }
+                        "properties": {"user_id": {"type": "integer"}},
+                    },
                 ),
-                
                 Tool(
                     name="docassemble_create_playground_project",
                     description="""Erstellt ein neues Projekt im Playground.
@@ -744,12 +788,11 @@ class DocassembleServer:
                         "type": "object",
                         "properties": {
                             "project": {"type": "string"},
-                            "user_id": {"type": "integer"}
+                            "user_id": {"type": "integer"},
                         },
-                        "required": ["project"]
-                    }
+                        "required": ["project"],
+                    },
                 ),
-                
                 Tool(
                     name="docassemble_delete_playground_project",
                     description="""Löscht ein Projekt aus dem Playground.
@@ -763,20 +806,18 @@ class DocassembleServer:
                         "type": "object",
                         "properties": {
                             "project": {"type": "string"},
-                            "user_id": {"type": "integer"}
+                            "user_id": {"type": "integer"},
                         },
-                        "required": ["project"]
-                    }
+                        "required": ["project"],
+                    },
                 ),
-                
                 Tool(
                     name="docassemble_clear_interview_cache",
                     description="""Löscht den Interview Cache, damit YAML neu gelesen wird.
                     
                     Erforderliche Berechtigungen: admin, developer oder playground_control""",
-                    inputSchema={"type": "object", "properties": {}}
+                    inputSchema={"type": "object", "properties": {}},
                 ),
-
                 # ====================================================================
                 # SYSTEM ADMINISTRATION (8 Tools)
                 # ====================================================================
@@ -787,9 +828,8 @@ class DocassembleServer:
                     Erforderliche Berechtigungen: admin
                     
                     Rückgabe: Server Konfiguration als JSON""",
-                    inputSchema={"type": "object", "properties": {}}
+                    inputSchema={"type": "object", "properties": {}},
                 ),
-                
                 Tool(
                     name="docassemble_list_installed_packages",
                     description="""Listet installierte Python Packages.
@@ -797,9 +837,8 @@ class DocassembleServer:
                     Erforderliche Berechtigungen: admin oder developer
                     
                     Rückgabe: Liste der installierten Packages mit Details""",
-                    inputSchema={"type": "object", "properties": {}}
+                    inputSchema={"type": "object", "properties": {}},
                 ),
-                
                 Tool(
                     name="docassemble_install_package",
                     description="""Installiert oder aktualisiert ein Package.
@@ -821,11 +860,10 @@ class DocassembleServer:
                             "github_url": {"type": "string"},
                             "pip": {"type": "string"},
                             "branch": {"type": "string"},
-                            "restart": {"type": "boolean"}
-                        }
-                    }
+                            "restart": {"type": "boolean"},
+                        },
+                    },
                 ),
-                
                 Tool(
                     name="docassemble_uninstall_package",
                     description="""Deinstalliert ein Package.
@@ -841,12 +879,11 @@ class DocassembleServer:
                         "type": "object",
                         "properties": {
                             "package": {"type": "string"},
-                            "restart": {"type": "boolean"}
+                            "restart": {"type": "boolean"},
                         },
-                        "required": ["package"]
-                    }
+                        "required": ["package"],
+                    },
                 ),
-                
                 Tool(
                     name="docassemble_get_package_update_status",
                     description="""Überprüft Status eines Package Update Prozesses.
@@ -859,13 +896,10 @@ class DocassembleServer:
                     Rückgabe: Status Information""",
                     inputSchema={
                         "type": "object",
-                        "properties": {
-                            "task_id": {"type": "string"}
-                        },
-                        "required": ["task_id"]
-                    }
+                        "properties": {"task_id": {"type": "string"}},
+                        "required": ["task_id"],
+                    },
                 ),
-                
                 Tool(
                     name="docassemble_trigger_server_restart",
                     description="""Löst einen Server Restart aus.
@@ -873,9 +907,8 @@ class DocassembleServer:
                     Erforderliche Berechtigungen: admin, developer oder playground_control
                     
                     Rückgabe: Task ID für Restart Monitoring""",
-                    inputSchema={"type": "object", "properties": {}}
+                    inputSchema={"type": "object", "properties": {}},
                 ),
-                
                 Tool(
                     name="docassemble_get_restart_status",
                     description="""Überprüft Status eines Server Restarts.
@@ -888,13 +921,10 @@ class DocassembleServer:
                     Rückgabe: Status Information""",
                     inputSchema={
                         "type": "object",
-                        "properties": {
-                            "task_id": {"type": "string"}
-                        },
-                        "required": ["task_id"]
-                    }
+                        "properties": {"task_id": {"type": "string"}},
+                        "required": ["task_id"],
+                    },
                 ),
-
                 # ====================================================================
                 # API KEY MANAGEMENT (6 Tools)
                 # ====================================================================
@@ -913,11 +943,10 @@ class DocassembleServer:
                         "type": "object",
                         "properties": {
                             "api_key": {"type": "string"},
-                            "name": {"type": "string"}
-                        }
-                    }
+                            "name": {"type": "string"},
+                        },
+                    },
                 ),
-                
                 Tool(
                     name="docassemble_create_user_api_key",
                     description="""Erstellt einen neuen API Key für den aktuellen Benutzer.
@@ -935,14 +964,19 @@ class DocassembleServer:
                         "type": "object",
                         "properties": {
                             "name": {"type": "string"},
-                            "method": {"type": "string", "enum": ["ip", "referer", "none"]},
+                            "method": {
+                                "type": "string",
+                                "enum": ["ip", "referer", "none"],
+                            },
                             "allowed": {"type": "array", "items": {"type": "string"}},
-                            "permissions": {"type": "array", "items": {"type": "string"}}
+                            "permissions": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
                         },
-                        "required": ["name"]
-                    }
+                        "required": ["name"],
+                    },
                 ),
-                
                 Tool(
                     name="docassemble_delete_user_api_key",
                     description="""Löscht einen API Key des aktuellen Benutzers.
@@ -953,13 +987,10 @@ class DocassembleServer:
                     - api_key (erforderlich): API Key zum Löschen""",
                     inputSchema={
                         "type": "object",
-                        "properties": {
-                            "api_key": {"type": "string"}
-                        },
-                        "required": ["api_key"]
-                    }
+                        "properties": {"api_key": {"type": "string"}},
+                        "required": ["api_key"],
+                    },
                 ),
-
                 # ====================================================================
                 # FILE OPERATIONS (3 Tools)
                 # ====================================================================
@@ -976,12 +1007,14 @@ class DocassembleServer:
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "i": {"type": "string", "description": "Interview Dateiname"}
+                            "i": {
+                                "type": "string",
+                                "description": "Interview Dateiname",
+                            }
                         },
-                        "required": ["i"]
-                    }
+                        "required": ["i"],
+                    },
                 ),
-
                 # ====================================================================
                 # DATA STASHING (1 Tool)
                 # ====================================================================
@@ -1004,60 +1037,62 @@ class DocassembleServer:
                             "stash_key": {"type": "string"},
                             "secret": {"type": "string"},
                             "delete": {"type": "boolean"},
-                            "refresh": {"type": "integer"}
+                            "refresh": {"type": "integer"},
                         },
-                        "required": ["stash_key", "secret"]
-                    }
-                )
+                        "required": ["stash_key", "secret"],
+                    },
+                ),
             ]
-            
+
             return ListToolsResult(tools=tools)
-        
+
         @self.server.call_tool()
         async def call_tool(request: CallToolRequest) -> CallToolResult:
             """Führt Docassemble API Aufrufe aus"""
-            
+
             if not self.client:
                 raise JSONRPCError(
                     code=-1,
-                    message="Docassemble Client nicht initialisiert. Base URL und API Key erforderlich."
+                    message="Docassemble Client nicht initialisiert. Base URL und API Key erforderlich.",
                 )
-            
+
             try:
-                result = await self._execute_tool(request.params.name, request.params.arguments or {})
-                
+                result = await self._execute_tool(
+                    request.params.name, request.params.arguments or {}
+                )
+
                 return CallToolResult(
                     content=[
                         TextContent(
                             type="text",
-                            text=json.dumps(result, indent=2, ensure_ascii=False)
+                            text=json.dumps(result, indent=2, ensure_ascii=False),
                         )
                     ]
                 )
-                
+
             except DocassembleAPIError as e:
                 error_msg = f"Docassemble API Fehler: {str(e)}"
                 if e.status_code:
                     error_msg += f" (Status: {e.status_code})"
                 if e.response_data:
                     error_msg += f"\nResponse: {e.response_data}"
-                    
+
                 raise JSONRPCError(code=-1, message=error_msg)
-                
+
             except Exception as e:
                 raise JSONRPCError(
                     code=-1,
-                    message=f"Unerwarteter Fehler bei {request.params.name}: {str(e)}"
+                    message=f"Unerwarteter Fehler bei {request.params.name}: {str(e)}",
                 )
-    
+
     async def _execute_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Any:
         """Führt das angegebene Tool aus"""
-        
+
         # Map tool names to client methods
         tool_mapping = {
             # Benutzer-Management
             "docassemble_create_user": "create_user",
-            "docassemble_invite_users": "invite_users", 
+            "docassemble_invite_users": "invite_users",
             "docassemble_list_users": "list_users",
             "docassemble_get_user_by_username": "get_user_by_username",
             "docassemble_get_current_user": "get_current_user",
@@ -1065,19 +1100,16 @@ class DocassembleServer:
             "docassemble_get_user_by_id": "get_user_by_id",
             "docassemble_deactivate_user": "deactivate_user",
             "docassemble_update_user": "update_user",
-            
             # Berechtigungen
             "docassemble_list_privileges": "list_privileges",
             "docassemble_give_user_privilege": "give_user_privilege",
             "docassemble_remove_user_privilege": "remove_user_privilege",
-            
             # Interview Sessions
             "docassemble_list_interview_sessions": "list_interview_sessions",
             "docassemble_delete_interview_sessions": "delete_interview_sessions",
             "docassemble_list_advertised_interviews": "list_advertised_interviews",
             "docassemble_get_user_secret": "get_user_secret",
             "docassemble_get_login_url": "get_login_url",
-            
             # Interview Operations
             "docassemble_start_interview": "start_interview",
             "docassemble_get_interview_variables": "get_interview_variables",
@@ -1086,7 +1118,6 @@ class DocassembleServer:
             "docassemble_run_interview_action": "run_interview_action",
             "docassemble_go_back_in_interview": "go_back_in_interview",
             "docassemble_delete_interview_session": "delete_interview_session",
-            
             # Playground
             "docassemble_list_playground_files": "list_playground_files",
             "docassemble_delete_playground_file": "delete_playground_file",
@@ -1094,7 +1125,6 @@ class DocassembleServer:
             "docassemble_create_playground_project": "create_playground_project",
             "docassemble_delete_playground_project": "delete_playground_project",
             "docassemble_clear_interview_cache": "clear_interview_cache",
-            
             # System Administration
             "docassemble_get_server_config": "get_server_config",
             "docassemble_list_installed_packages": "list_installed_packages",
@@ -1103,51 +1133,50 @@ class DocassembleServer:
             "docassemble_get_package_update_status": "get_package_update_status",
             "docassemble_trigger_server_restart": "trigger_server_restart",
             "docassemble_get_restart_status": "get_restart_status",
-            
             # API Key Management
             "docassemble_get_user_api_keys": "get_user_api_keys",
             "docassemble_create_user_api_key": "create_user_api_key",
             "docassemble_delete_user_api_key": "delete_user_api_key",
-            
             # File Operations
             "docassemble_get_interview_data": "get_interview_data",
-            
             # Data Stashing
-            "docassemble_retrieve_stashed_data": "retrieve_stashed_data"
+            "docassemble_retrieve_stashed_data": "retrieve_stashed_data",
         }
-        
+
         method_name = tool_mapping.get(tool_name)
         if not method_name:
             raise ValueError(f"Unbekanntes Tool: {tool_name}")
-        
+
         method = getattr(self.client, method_name)
-        
+
         # Special handling for start_interview which accepts **kwargs
         if tool_name == "docassemble_start_interview":
-            i = arguments.pop('i')
-            secret = arguments.pop('secret', None)
+            i = arguments.pop("i")
+            secret = arguments.pop("secret", None)
             # Pass remaining arguments as url_args
             return method(i=i, secret=secret, **arguments)
-        
+
         return method(**arguments)
-    
+
     def setup_client(self, base_url: str, api_key: str):
         """Konfiguriert den Docassemble Client"""
         self.client = DocassembleClient(base_url, api_key)
-    
+
     async def run(self):
         """Startet den MCP Server"""
         # Check for required environment variables
-        base_url = os.getenv('DOCASSEMBLE_BASE_URL')
-        api_key = os.getenv('DOCASSEMBLE_API_KEY')
-        
+        base_url = os.getenv("DOCASSEMBLE_BASE_URL")
+        api_key = os.getenv("DOCASSEMBLE_API_KEY")
+
         if not base_url or not api_key:
-            logger.error("DOCASSEMBLE_BASE_URL und DOCASSEMBLE_API_KEY Umgebungsvariablen sind erforderlich")
+            logger.error(
+                "DOCASSEMBLE_BASE_URL und DOCASSEMBLE_API_KEY Umgebungsvariablen sind erforderlich"
+            )
             raise ValueError("Docassemble Konfiguration fehlt")
-        
+
         # Setup client
         self.setup_client(base_url, api_key)
-        
+
         # Start server
         logger.info(f"Starte Docassemble MCP Server für {base_url}")
         async with stdio_server() as (read_stream, write_stream):

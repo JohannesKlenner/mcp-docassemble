@@ -6,7 +6,7 @@ Stellt alle 61 Docassemble API Endpunkte als Tools für Large Language Models zu
 
 Kategorien der verfügbaren API Endpunkte:
 - Benutzer-Management (9 Endpunkte): Erstellen, Bearbeiten, Verwalten von Benutzern
-- Berechtigungen (4 Endpunkte): Benutzerrechte verwalten  
+- Berechtigungen (4 Endpunkte): Benutzerrechte verwalten
 - Interview Sessions (10 Endpunkte): Sessions auflisten, löschen, verwalten
 - Interview Operations (8 Endpunkte): Interviews starten, Variablen setzen, Aktionen ausführen
 - Playground (9 Endpunkte): Dateien und Projekte im Playground verwalten
@@ -17,24 +17,24 @@ Kategorien der verfügbaren API Endpunkte:
 
 Verwendung:
     from mcp_docassemble import create_server
-    
+
     server = create_server()
     # Konfiguration über Umgebungsvariablen:
     # DOCASSEMBLE_BASE_URL=https://docassemble.example.com
     # DOCASSEMBLE_API_KEY=your_api_key_here
-    
+
     asyncio.run(server.run())
 """
 
 __version__ = "0.1.0"
 __author__ = "Docassemble MCP Development Team"
 
-from .server import create_server, DocassembleServer
-from .client import DocassembleClient, DocassembleAPIError
+from .client import DocassembleAPIError, DocassembleClient
+from .server import DocassembleServer, create_server
 
 __all__ = [
     "create_server",
-    "DocassembleServer", 
+    "DocassembleServer",
     "DocassembleClient",
-    "DocassembleAPIError"
+    "DocassembleAPIError",
 ]

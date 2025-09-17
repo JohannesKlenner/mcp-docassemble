@@ -11,7 +11,9 @@ _LIVE_TEST_ENV = "MCP_DOCASSEMBLE_LIVE_TESTS"
 _SANITY_TEST_FILENAME = "test_sanity.py"
 
 
-def pytest_collection_modifyitems(config: pytest.Config, items: Iterable[pytest.Item]) -> None:
+def pytest_collection_modifyitems(
+    config: pytest.Config, items: Iterable[pytest.Item]
+) -> None:
     """Skip integration tests unless an explicit opt-in flag is provided.
 
     The existing test suite exercises a live Docassemble instance using
@@ -24,7 +26,9 @@ def pytest_collection_modifyitems(config: pytest.Config, items: Iterable[pytest.
     if os.getenv(_LIVE_TEST_ENV) == "1":
         return
 
-    skip_marker = pytest.mark.skip(reason="requires live Docassemble server; set MCP_DOCASSEMBLE_LIVE_TESTS=1 to enable")
+    skip_marker = pytest.mark.skip(
+        reason="requires live Docassemble server; set MCP_DOCASSEMBLE_LIVE_TESTS=1 to enable"
+    )
     for item in items:
         if item.fspath.basename == _SANITY_TEST_FILENAME:
             continue
